@@ -26,6 +26,9 @@ function Tile:init(x, y, color, variety)
     -- tile appearance/points
     self.color = color
     self.variety = variety
+
+    --initialize shiny tile with 5 percent chance
+    self.shiny = math.random(1,20) == 10
 end
 
 function Tile:render(x, y)
