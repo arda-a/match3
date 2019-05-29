@@ -173,6 +173,17 @@ function PlayState:update(dt)
                     :finish(function()
                         self:calculateMatches()
                         end)
+
+                    --Check the entire board for possible matches. If there isn't any, game over.
+                    if self.board:CalculateMatchesForEntireBoard() == false then
+                        Timer.clear()
+        
+                        gSounds['game-over']:play()
+                
+                        gStateMachine:change('game-over', {
+                            score = self.score
+                        })
+                    end
                 else
                     --if there is not a match, swap tiles to their old state.
                     self.board.tiles[self.highlightedTile.gridY][self.highlightedTile.gridX] = newTile

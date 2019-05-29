@@ -33,11 +33,12 @@ function Board:initializeTiles()
         for tileX = 1, 8 do
             
             -- create a new tile at X,Y with a random color and variety
-            table.insert(self.tiles[tileY], Tile(tileX, tileY, math.random(18), math.random(math.min(level,6)))
+            table.insert(self.tiles[tileY], Tile(tileX, tileY, math.random(9), math.random(math.min(level,6)))
         end
     end
 
-    while self:calculateMatches() do
+    --There shouldn't be any matches right now, but there should be possible matches.
+    while self:calculateMatches() or self.board:CalculateMatchesForEntireBoard() == false do
         
         -- recursively initialize if matches were returned so we always have
         -- a matchless board on start
@@ -222,6 +223,50 @@ function Board:calculateMatches()
 
     -- return matches table if > 0, else just return false
     return #self.matches > 0 and self.matches or false
+end
+
+--[[
+    Check the entire board for matches. If there isn't any matches, reset the board.
+    Move up,down,left and right to validate.
+    Returns true if there is a match, otherwise false.
+]]
+function Board:CalculateMatchesForEntireBoard()
+    for y = 1,7 do
+        for x = 1,7 do
+            if trySwapTilesAndCheckMatches(self.tile[y][x], self.tile[y][x + 1]) or 
+                trySwapTilesAndCheckMatches(self.tile[y][x], self.tile[y + 1][x]) then
+                return true
+            end
+        end
+    end
+
+    --swap with right bottom tile which we omitted before.
+    if trySwapTilesAndCheckMatches(self.tile[8][7], self.tile[8][8]) or 
+        trySwapTilesAndCheckMatches(self.tile[7][8], self.tile[8][8]) then
+        return true
+    end
+
+    return false
+end
+
+--[[
+    Try swapping tiles and return true if there is a match, otherwise false.
+]]
+local function trySwapTilesAndCheckMatches(tile1, tile2)
+    local tempTile = tile1
+    tile1 = tile2
+    tile2 = tempTile
+    if self:calculateMatches() ~= false then
+        tempTile = tile1
+        tile1 = tile2
+        tile2 = tempTile
+        return true
+    else
+        tempTile = tile1
+        tile1 = tile2
+        tile2 = tempTile
+    end
+    return false
 end
 
 --[[
