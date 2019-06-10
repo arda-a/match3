@@ -10,11 +10,9 @@
     The individual tiles that make up our game board. Each Tile can have a
     color and a variety, with the varietes adding extra points to the matches.
 ]]
-
-Tile = Class{}
+Tile = Class {}
 
 function Tile:init(x, y, color, variety)
-    
     -- board positions
     self.gridX = x
     self.gridY = y
@@ -27,24 +25,33 @@ function Tile:init(x, y, color, variety)
     self.color = color
     self.variety = variety
 
-    --initialize shiny tile with 5 percent chance
-    self.shiny = math.random(1,20) == 10
+    --initialize shiny tile with 10 percent chance
+    self.shiny = math.random(1, 10) == 10
 end
 
 function Tile:render(x, y)
-    
     -- draw shadow
-    --if it is shiny, draw a yellowish shadow instead of dark one.
-    if self.shiny then
-        love.graphics.setColor(255, 248, 186, 255)
-    else
-        love.graphics.setColor(34, 32, 52, 255)
-    end
-    love.graphics.draw(gTextures['main'], gFrames['tiles'][self.color][self.variety],
-        self.x + x + 2, self.y + y + 2)
+    love.graphics.setColor(34 / 255, 32 / 255, 52 / 255, 1)
+    love.graphics.draw(gTextures["main"], gFrames["tiles"][self.color][self.variety], self.x + x + 2, self.y + y + 2)
 
     -- draw tile itself
-    love.graphics.setColor(255, 255, 255, 255)
-    love.graphics.draw(gTextures['main'], gFrames['tiles'][self.color][self.variety],
-        self.x + x, self.y + y)
+    if self.shiny then
+        -- multiply so drawing white rect makes it brighter
+        love.graphics.setBlendMode("add")
+
+        love.graphics.setColor(1, 1, 0.8, 120 / 255)
+        love.graphics.rectangle(
+            "line",
+            (self.gridX - 1) * 32 + (VIRTUAL_WIDTH - 272),
+            (self.gridY - 1) * 32 + 16,
+            32,
+            32,
+            4
+        )
+
+        -- back to alpha
+        love.graphics.setBlendMode("alpha")
+    end
+    love.graphics.setColor(1, 1, 1, 1)
+    love.graphics.draw(gTextures["main"], gFrames["tiles"][self.color][self.variety], self.x + x, self.y + y)
 end

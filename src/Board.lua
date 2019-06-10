@@ -10,15 +10,18 @@
     The Board is our arrangement of Tiles with which we must try to find matching
     sets of three horizontally or vertically.
 ]]
+Board = Class {}
 
-Board = Class{}
+MAX_COLOR_NUMBER = 7
 
+local counter = 0
 function Board:init(x, y, level)
     self.x = x
     self.y = y
     self.matches = {}
     self.level = level
-
+    
+    counter = 0
     self:initializeTiles()
 end
 
@@ -26,23 +29,26 @@ function Board:initializeTiles()
     self.tiles = {}
 
     for tileY = 1, 8 do
-        
         -- empty table that will serve as a new row
         table.insert(self.tiles, {})
 
         for tileX = 1, 8 do
-            
+            if level == nil then
+                level = 1
+            end
             -- create a new tile at X,Y with a random color and variety
-            table.insert(self.tiles[tileY], Tile(tileX, tileY, math.random(9), math.random(math.min(level,6)))
+            -- Ensure Level 1 starts just with simple flat blocks
+            table.insert(self.tiles[tileY], Tile(tileX, tileY, math.random(MAX_COLOR_NUMBER), math.random(math.min(level, 6))))
         end
     end
 
     --There shouldn't be any matches right now, but there should be possible matches.
-    while self:calculateMatches() or self.board:CalculateMatchesForEntireBoard() == false do
-        
+    while self:calculateMatches() or self:CalculateMatchesForEntireBoard() == false do
         -- recursively initialize if matches were returned so we always have
         -- a matchless board on start
         self:initializeTiles()
+        counter = counter + 1
+        print ( "Initialized again " .. counter .. " times." )
     end
 end
 
@@ -56,21 +62,20 @@ function Board:calculateMatches()
 
     -- how many of the same color blocks in a row we've found
     local matchNum = 1
-    
+
     -- horizontal matches first
     for y = 1, 8 do
         local colorToMatch = self.tiles[y][1].color
         matchNum = 1
-        
+
         local hasShinyTile = false
-        
+
         -- every horizontal tile
         for x = 2, 8 do
             -- if this is the same color as the one we're trying to match...
             if self.tiles[y][x].color == colorToMatch then
                 matchNum = matchNum + 1
             else
-                
                 -- set this as the new color we want to watch for
                 colorToMatch = self.tiles[y][x].color
 
@@ -79,7 +84,6 @@ function Board:calculateMatches()
                     local match = {}
 
                     --check first by going back if any tile is shiny
-                    --TODO
                     for x2 = x - 1, x - matchNum, -1 do
                         if self.tiles[y][x2].shiny then
                             hasShinyTile = true
@@ -88,14 +92,13 @@ function Board:calculateMatches()
                     end
 
                     if hasShinyTile then
-                        for i = 1,8 do
+                        for i = 1, 8 do
                             --add entire row to matches
                             table.insert(match, self.tiles[y][i])
                         end
                     else
                         -- go backwards from here by matchNum
                         for x2 = x - 1, x - matchNum, -1 do
-                            
                             -- add each tile to the match that's in that match
                             table.insert(match, self.tiles[y][x2])
                         end
@@ -118,7 +121,7 @@ function Board:calculateMatches()
         -- account for the last row ending with a match
         if matchNum >= 3 then
             local match = {}
-            
+
             --check if there is a shiny tile in the match
             for x = 8, 8 - matchNum + 1, -1 do
                 if self.tiles[y][x].shiny then
@@ -162,8 +165,8 @@ function Board:calculateMatches()
 
                     --check match has a shiny tile
                     for y2 = y - 1, y - matchNum, -1 do
-                        if self.tiles[y2][x].shiny then 
-                            hasShinyTile = true 
+                        if self.tiles[y2][x].shiny then
+                            hasShinyTile = true
                         end
                     end
                     --if any tile is shiny, match all the column
@@ -171,7 +174,7 @@ function Board:calculateMatches()
                         for i = 1, 8 do
                             table.insert(match, self.tiles[i][x])
                         end
-                    else            
+                    else
                         for y2 = y - 1, y - matchNum, -1 do
                             table.insert(match, self.tiles[y2][x])
                         end
@@ -193,7 +196,7 @@ function Board:calculateMatches()
         -- account for the last column ending with a match
         if matchNum >= 3 then
             local match = {}
-            
+
             --check if there is a shiny tile in the match
             for y = 8, 8 - matchNum + 1, -1 do
                 if self.tiles[y][x].shiny then
@@ -231,19 +234,26 @@ end
     Returns true if there is a match, otherwise false.
 ]]
 function Board:CalculateMatchesForEntireBoard()
-    for y = 1,7 do
-        for x = 1,7 do
-            if trySwapTilesAndCheckMatches(self.tile[y][x], self.tile[y][x + 1]) or 
-                trySwapTilesAndCheckMatches(self.tile[y][x], self.tile[y + 1][x]) then
+    for y = 1, 7 do
+        for x = 1, 7 do
+            if self:trySwapTilesAndCheckMatches(y, x, y, x + 1) or self:trySwapTilesAndCheckMatches(y, x, y + 1, x) then
                 return true
             end
         end
     end
 
-    --swap with right bottom tile which we omitted before.
-    if trySwapTilesAndCheckMatches(self.tile[8][7], self.tile[8][8]) or 
-        trySwapTilesAndCheckMatches(self.tile[7][8], self.tile[8][8]) then
-        return true
+    --last row
+    for x = 1, 7 do
+        if self:trySwapTilesAndCheckMatches(8, x, 8, x + 1) then
+            return true
+        end
+    end
+
+    --last column
+    for y = 1, 7 do
+        if self:trySwapTilesAndCheckMatches(y, 8, y + 1, 8) then
+            return true
+        end
     end
 
     return false
@@ -252,21 +262,43 @@ end
 --[[
     Try swapping tiles and return true if there is a match, otherwise false.
 ]]
-local function trySwapTilesAndCheckMatches(tile1, tile2)
-    local tempTile = tile1
-    tile1 = tile2
-    tile2 = tempTile
+function Board:trySwapTilesAndCheckMatches(t1_y, t1_x, t2_y, t2_x)
+    local tempTile = self.tiles[t1_y][t1_x]
+    local tempTile2 = self.tiles[t2_y][t2_x]
+    local tempX1 = self.tiles[t1_y][t1_x].gridX
+    local tempY1 = self.tiles[t1_y][t1_x].gridY
+    local shiny1 = self.tiles[t1_y][t1_x].shiny
+    local tempX2 = self.tiles[t2_y][t2_x].gridX
+    local tempY2 = self.tiles[t2_y][t2_x].gridY
+    local shiny2 = self.tiles[t2_y][t2_x].shiny
+
+    tempTile.gridX = tempX2
+    tempTile.gridY = tempY2
+    tempTile.shiny = shiny2
+    tempTile2.gridX = tempX1
+    tempTile2.gridY = tempY1
+    tempTile2.shiny = shiny1
+
+    self.tiles[tempTile.gridY][tempTile.gridX] = tempTile
+    self.tiles[tempTile2.gridY][tempTile2.gridX] = tempTile2
+
+    local possibleResult = false
     if self:calculateMatches() ~= false then
-        tempTile = tile1
-        tile1 = tile2
-        tile2 = tempTile
-        return true
-    else
-        tempTile = tile1
-        tile1 = tile2
-        tile2 = tempTile
+        possibleResult = true
     end
-    return false
+
+    --revert temporary swap
+    tempTile.gridX = tempX1
+    tempTile.gridY = tempY1
+    tempTile.shiny = shiny1
+    tempTile2.gridX = tempX2
+    tempTile2.gridY = tempY2
+    tempTile2.shiny = shiny2
+
+    self.tiles[tempTile.gridY][tempTile.gridX] = tempTile
+    self.tiles[tempTile2.gridY][tempTile2.gridX] = tempTile2
+
+    return possibleResult
 end
 
 --[[
@@ -298,15 +330,12 @@ function Board:getFallingTiles()
 
         local y = 8
         while y >= 1 do
-            
             -- if our last tile was a space...
             local tile = self.tiles[y][x]
-            
+
             if space then
-                
                 -- if the current tile is *not* a space, bring this down to the lowest space
                 if tile then
-                    
                     -- put the tile in the correct spot in the board and fix its grid positions
                     self.tiles[spaceY][x] = tile
                     tile.gridY = spaceY
@@ -328,7 +357,7 @@ function Board:getFallingTiles()
                 end
             elseif tile == nil then
                 space = true
-                
+
                 -- if we haven't assigned a space yet, set this to it
                 if spaceY == 0 then
                     spaceY = y
@@ -346,9 +375,8 @@ function Board:getFallingTiles()
 
             -- if the tile is nil, we need to add a new one
             if not tile then
-
                 -- new tile with random color and variety
-                local tile = Tile(x, y, math.random(18), math.random(6))
+                local tile = Tile(x, y, math.random(MAX_COLOR_NUMBER), math.random(math.min(level, 6)))
                 tile.y = -32
                 self.tiles[y][x] = tile
 
