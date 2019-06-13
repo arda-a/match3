@@ -12,7 +12,7 @@
 ]]
 Board = Class {}
 
-MAX_COLOR_NUMBER = 7
+MAX_COLOR_NUMBER = 16
 
 local counter = 0
 function Board:init(x, y, level)
@@ -267,17 +267,13 @@ function Board:trySwapTilesAndCheckMatches(t1_y, t1_x, t2_y, t2_x)
     local tempTile2 = self.tiles[t2_y][t2_x]
     local tempX1 = self.tiles[t1_y][t1_x].gridX
     local tempY1 = self.tiles[t1_y][t1_x].gridY
-    local shiny1 = self.tiles[t1_y][t1_x].shiny
     local tempX2 = self.tiles[t2_y][t2_x].gridX
     local tempY2 = self.tiles[t2_y][t2_x].gridY
-    local shiny2 = self.tiles[t2_y][t2_x].shiny
 
     tempTile.gridX = tempX2
     tempTile.gridY = tempY2
-    tempTile.shiny = shiny2
     tempTile2.gridX = tempX1
     tempTile2.gridY = tempY1
-    tempTile2.shiny = shiny1
 
     self.tiles[tempTile.gridY][tempTile.gridX] = tempTile
     self.tiles[tempTile2.gridY][tempTile2.gridX] = tempTile2
@@ -290,10 +286,8 @@ function Board:trySwapTilesAndCheckMatches(t1_y, t1_x, t2_y, t2_x)
     --revert temporary swap
     tempTile.gridX = tempX1
     tempTile.gridY = tempY1
-    tempTile.shiny = shiny1
     tempTile2.gridX = tempX2
     tempTile2.gridY = tempY2
-    tempTile2.shiny = shiny2
 
     self.tiles[tempTile.gridY][tempTile.gridX] = tempTile
     self.tiles[tempTile2.gridY][tempTile2.gridX] = tempTile2

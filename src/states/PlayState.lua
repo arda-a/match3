@@ -17,8 +17,6 @@
 ]]
 PlayState = Class {__includes = BaseState}
 
-local gameOverEntered = false
-
 function PlayState:init()
     -- start our transition alpha at full, so we fade in
     self.transitionAlpha = 1
@@ -151,23 +149,17 @@ function PlayState:update(dt)
                 -- swap grid positions of tiles
                 local tempX = self.highlightedTile.gridX
                 local tempY = self.highlightedTile.gridY
-                local shiny = self.highlightedTile.shiny
 
                 local newTile = self.board.tiles[y][x]
 
                 self.highlightedTile.gridX = newTile.gridX
                 self.highlightedTile.gridY = newTile.gridY
-                self.highlightedTile.shiny = newTile.shiny
                 newTile.gridX = tempX
                 newTile.gridY = tempY
-                newTile.shiny = shiny
 
                 -- swap tiles in the tiles table
                 self.board.tiles[self.highlightedTile.gridY][self.highlightedTile.gridX] = self.highlightedTile
-                self.board.tiles[self.highlightedTile.gridY][self.highlightedTile.gridX].shiny = self.highlightedTile.shiny
-
                 self.board.tiles[newTile.gridY][newTile.gridX] = newTile
-                self.board.tiles[newTile.gridY][newTile.gridX].shiny = newTile.shiny
 
                 --check if there is a match first.
                 if self.board:calculateMatches() ~= false then
@@ -182,29 +174,29 @@ function PlayState:update(dt)
                     finish(
                         function()
                             self:calculateMatches()
+
+                            --Check the entire board for possible matches. If there isn't any, reset the board.
+                            if self.board:CalculateMatchesForEntireBoard() == false and not gameOverEntered then
+                                print ( "Board is reset because there is no match.") --print to console
+                                self.board:initializeTiles()
+                            end
                         end
                     )
-                    if gameOverEntered then Timer.clear() end
                 else --swap back if there is no match
                     -- swap grid positions of tiles
                     tempX = self.highlightedTile.gridX
                     tempY = self.highlightedTile.gridY
-                    shiny = self.highlightedTile.shiny
 
                     self.highlightedTile.gridX = newTile.gridX
                     self.highlightedTile.gridY = newTile.gridY
-                    self.highlightedTile.shiny = newTile.shiny
                     
                     newTile.gridX = tempX
                     newTile.gridY = tempY
-                    newTile.shiny = shiny
 
                     -- swap tiles in the tiles table
                     self.board.tiles[self.highlightedTile.gridY][self.highlightedTile.gridX] = self.highlightedTile
-                    self.board.tiles[self.highlightedTile.gridY][self.highlightedTile.gridX].shiny = self.highlightedTile.shiny
-
                     self.board.tiles[newTile.gridY][newTile.gridX] = newTile
-                    self.board.tiles[newTile.gridY][newTile.gridX].shiny = newTile.shiny
+                    
                     gSounds["error"]:play()
                     self.highlightedTile = nil
                 end
@@ -263,16 +255,6 @@ function PlayState:calculateMatches()
         )
     else
         self.canInput = true
-
-        --Check the entire board for possible matches. If there isn't any, game over.
-        if self.board:CalculateMatchesForEntireBoard() == false then
-            print ( "Game over because there is no match.") --print to console
-            gSounds['game-over']:play()
-            gStateMachine:change('game-over', {
-                score = self.score
-            })
-            gameOverEntered = true
-        end
     end
 end
 
